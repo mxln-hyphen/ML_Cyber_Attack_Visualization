@@ -1,0 +1,28 @@
+# 服务名称
+spring:
+  application:
+    name: ml-dataset-processing
+  # 多环境
+  profiles:
+    active: dev
+  # nacos注册中心地址
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 110.41.58.174:8849
+      # nacos配置中心地址:
+      config:
+        server-addr: 110.41.58.174:8849
+        file-extension: yml
+        # ml-dataset-processing-dev.yml
+  #elasticsearch
+  data:
+    elasticsearch:
+      client:
+        reactive:
+          endpoints: 110.41.58.174:9200
+          use-ssl: false
+
+elasticsearch:
+  host: "110.41.58.174"
+  port: 9200
