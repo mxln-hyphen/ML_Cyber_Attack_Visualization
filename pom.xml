@@ -5,6 +5,8 @@
 
     <modules>
         <module>ML-DataSet-Processing</module>
+        <module>ML-Interaction</module>
+        <module>ML-Innercommon</module>
     </modules>
 
     <parent>

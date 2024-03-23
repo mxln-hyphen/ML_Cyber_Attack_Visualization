@@ -1,7 +1,7 @@
 package com.itmxln.mldatasetprocessing.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itmxln.mldatasetprocessing.datastructure.Connection;
+import Innercommon.datastructure.Connection;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;

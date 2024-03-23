@@ -1,7 +1,7 @@
 # 服务名称
 spring:
   application:
-    name: ml-dataset-processing
+    name: ml-interaction
   # 多环境
   profiles:
     active: dev
@@ -14,7 +14,7 @@ spring:
       config:
         server-addr: 110.41.58.174:8849
         file-extension: yml
-        # ml-dataset-processing-dev.yml
+        # ml-interaction-dev.yml
   #elasticsearch
   data:
     elasticsearch:
@@ -22,13 +22,5 @@ spring:
         reactive:
           endpoints: 110.41.58.174:9200
           use-ssl: false
-  # datasource
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/ml_cyber_attack_visualization?characterEncoding=utf-8&useSSL=false
-    username: root
-    password: root
 
-elasticsearch:
-  host: "110.41.58.174"
-  port: 9200
+

@@ -1,10 +1,10 @@
-package com.itmxln.mldatasetprocessing.datastructure;
+package Innercommon.datastructure;
 
 import lombok.Getter;
 import lombok.Setter;
 import org.pcap4j.packet.Packet;
 import org.pcap4j.packet.TcpPacket;
-import com.itmxln.mldatasetprocessing.Enum.ConnectionState;
+import Innercommon.Enum.ConnectionState;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.DateFormat;

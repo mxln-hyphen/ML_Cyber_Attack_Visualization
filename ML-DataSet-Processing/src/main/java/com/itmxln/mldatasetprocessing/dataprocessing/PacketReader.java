@@ -1,7 +1,7 @@
 package com.itmxln.mldatasetprocessing.dataprocessing;
 
-import com.itmxln.mldatasetprocessing.Enum.ConnectionState;
-import com.itmxln.mldatasetprocessing.datastructure.Connection;
+import Innercommon.Enum.ConnectionState;
+import Innercommon.datastructure.Connection;
 import com.itmxln.mldatasetprocessing.elastic.ConnectionRepository;
 import org.pcap4j.core.PcapHandle;
 import org.pcap4j.core.Pcaps;

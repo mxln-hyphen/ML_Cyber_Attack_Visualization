@@ -1,11 +1,11 @@
 package com.itmxln.mldatasetprocessing.RealtimePacketCapture;
 
-import com.itmxln.mldatasetprocessing.datastructure.Connection;
+import Innercommon.datastructure.Connection;
 import org.pcap4j.core.*;
 import org.pcap4j.packet.IpPacket;
 import org.pcap4j.packet.Packet;
 import org.pcap4j.packet.TcpPacket;
-import com.itmxln.mldatasetprocessing.Enum.ConnectionState;
+import Innercommon.Enum.ConnectionState;
 
 import java.io.IOException;
 import java.util.ArrayList;

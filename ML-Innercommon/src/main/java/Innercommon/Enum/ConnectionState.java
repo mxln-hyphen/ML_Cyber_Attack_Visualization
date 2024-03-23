@@ -1,4 +1,4 @@
-package com.itmxln.mldatasetprocessing.Enum;
+package Innercommon.Enum;
 
 public enum ConnectionState {
     CLOSED, // 连接已关闭或四次挥手完成后的最终状态

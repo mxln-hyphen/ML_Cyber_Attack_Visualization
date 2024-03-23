@@ -1,4 +1,4 @@
-package com.itmxln.mldatasetprocessing.Enum;
+package Innercommon.Enum;
 
 public enum ConnectionOverallState {
     NOT_ESTABLISHED, // 连接未完全建立
