@@ -19,7 +19,9 @@ public enum NewConnectionState {
 
     FINISHED, // 收到对方的ACK包，连接完成并且成功断开
 
-    RST_FINISHED // 收到RST包，发生异常，直接中断连接
+    RST_FINISHED, // 收到RST包，发生异常，直接中断连接
+
+    TIME_OVER //超时，没有接收到后续的包
     ;
 
     public static NewConnectionState codeOf(int code) {

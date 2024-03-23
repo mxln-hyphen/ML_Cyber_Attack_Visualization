@@ -53,7 +53,7 @@ public class NewConnectionService {
         );
 
         if (count == 1) {
-            log.info("写入成功");
+            //log.info("写入成功");
         }
 
         return 1;
@@ -67,15 +67,21 @@ public class NewConnectionService {
         //根据id查询
         List<MySQLConnection> connection = dataMapper.selectTemporaryConnectionByConnectionId(tableName, connectionId);
 
+        if(connection.size()==0){
+            return null;
+        }
+
         if (connection.size() > 1) {
-            log.error("找到多余一个临时记录！");
+            log.error("找到多于一个临时记录！");
+            return null;
         }
 
         if (connection.size() == 1) {
-            log.info("找到一条临时记录");
+            //log.info("找到一条临时记录");
         }
         NewConnection ret = generateMySQLConnection(connection.get(0));
-        ret.setIsFromMySQL(true);
+        ret.setIsFromMySQL(true);//该数据来自数据库
+        ret.setIsTemporary(false);//该数据现在不是临时数据了
         return generateMySQLConnection(connection.get(0));
     }
 
@@ -145,53 +151,7 @@ public class NewConnectionService {
         return newConnection;
     }
 
-    /**
-     * 获取源ip
-     * @return
-     */
-    public String getSourceIp(Packet packet){
-        IpPacket ipPacket = packet.get(IpPacket.class);
-        if (ipPacket instanceof IpV4Packet) {
-            return ((IpV4Packet) ipPacket).getHeader().getSrcAddr().toString().substring(1);
-        } else if (ipPacket instanceof IpV6Packet) {
-            return ((IpV6Packet) ipPacket).getHeader().getSrcAddr().toString().substring(1);
-        }
-        return "";
-    }
 
-    /**
-     * 获取目的ip
-     * @return
-     */
-    public String getDstIp(Packet packet){
-        IpPacket ipPacket = packet.get(IpPacket.class);
-        if (ipPacket instanceof IpV4Packet) {
-            return  ((IpV4Packet) ipPacket).getHeader().getDstAddr().toString().substring(1);
-        } else if (ipPacket instanceof IpV6Packet) {
-            return  ((IpV6Packet) ipPacket).getHeader().getDstAddr().toString().substring(1);
-        }
-        return "";
-    }
-
-    /**
-     * 获取源端口
-     * @return
-     */
-    public int getSourcePort(Packet packet){
-        TcpPacket tcpPacket = packet.get(TcpPacket.class);
-
-        return tcpPacket.getHeader().getSrcPort().valueAsInt();
-    }
-
-    /**
-     * 获取目的端口
-     * @return
-     */
-    public int getDstPort(Packet packet){
-        TcpPacket tcpPacket = packet.get(TcpPacket.class);
-
-        return tcpPacket.getHeader().getDstPort().valueAsInt();
-    }
 
 
 }

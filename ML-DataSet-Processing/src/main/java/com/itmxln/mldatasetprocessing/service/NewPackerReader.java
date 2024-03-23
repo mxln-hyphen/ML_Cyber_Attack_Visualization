@@ -1,8 +1,10 @@
 package com.itmxln.mldatasetprocessing.service;
 
 import Innercommon.Enum.ConnectionState;
+import Innercommon.Enum.NewConnectionState;
 import Innercommon.datastructure.Connection;
 import Innercommon.datastructure.NewConnection;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Select;
 import org.pcap4j.core.PcapHandle;
@@ -23,13 +25,18 @@ public class NewPackerReader {
     private HashMap<String, NewConnection> map = new HashMap<>();
 
     //最大储存连接数
-    private int MAXCONNECTIONNUM = 1000;
+    private int MAXCONNECTIONNUM = 3000;
+
 
     //表名
-    private String fileName;
+    private String tableName;
+
 
     @Autowired
     private NewConnectionService newConnectionService;
+
+    @Autowired
+    private PacketService packetService;
 
     /**
      * 从pcap文件中读取所有数据包，并根据它们属于哪个连接进行分类。
@@ -37,60 +44,85 @@ public class NewPackerReader {
      * @param filePath pcap文件的路径
      */
     public void readPcapFile(String filePath) {
-        fileName = "data_1";
+        tableName = "data_1";
+        int packetCount = 0;
         try {
             PcapHandle handle = Pcaps.openOffline(filePath);
-            int packetCount = 0;
             while (true) {
                 try {
                     //读取数据包
                     Packet packet = handle.getNextPacketEx();
                     // 获取数据包的时间戳
                     Instant timestamp = handle.getTimestamp().toInstant();
+
+                    if (!packet.contains(TcpPacket.class)) {
+                        continue; // 非TCP包，不处理
+                    }
+
                     // 根据数据包ip生成唯一标识符
                     String connectionId = generateConnectionId(packet);
 
-                    //连接
-                    NewConnection connection;
 
+                    //连接
+                    NewConnection connection=null;
 
                     //获取connection
                     //查询connection是否已经建立
                     boolean isInMap = map.containsKey(connectionId);
                     if (!isInMap) {
-                        //数据库能否查到
-                        connection = newConnectionService.selectTemporaryConnectionByConnectionId(fileName, connectionId);
-                        if (connection == null) {
-                            //map中connection是否太多了
-                            boolean tooMuchConnection = map.size() > MAXCONNECTIONNUM;
-                            if (tooMuchConnection) {
-                                //把所有connection刷数据库，并标记为临时刷入
-                                insertAllConnection(map);
-                            }
-                            //建立新connection并写入Map
-                            connection = generateNewConnection(packet, timestamp);
-                            map.put(connectionId, connection);
-                        }
+                        //尝试在数据库中查询该次连接
+                        //connection = newConnectionService.selectTemporaryConnectionByConnectionId(tableName, connectionId);
                     } else {
                         //从map中获取connection
                         connection = map.get(connectionId);
                     }
 
-                    //更新connection信息，记得把是否是临时数据改为false
+                    //检查该数据包是否是一个开启连接的数据包
+                    if (packetService.isStart(packet)) {//如果是
+                        if (connection != null) {//有一个已经存在的连接
+                            //把这个连接提前终止
+                            connection.setIsOver(true);
+                            //状态设置为超时
+                            connection.setState(NewConnectionState.TIME_OVER);
+                            //在map中移除这个连接
+                            map.remove(connectionId);
+                            newConnectionService.writeMySQL(tableName, connection);
+                            connection = null;
+                        }
+                        //检查一下连接数是否太多
+                        checkMapSize(map);
+                        //新建一个连接
+                        connection = generateNewConnection(packet, timestamp);
+                        //放进Map
+                        map.put(connectionId, connection);
+                    }
 
+                    if (connection != null) {
+                        //更新connection信息
+                        updateNewConnection(connection, packet, timestamp);
 
+                        //连接是否结束
+                        boolean isConnectionOver = connection.getIsOver();
 
-                    //连接是否结束
-                    boolean isConnectionOver = false;
-
-                    if (isConnectionOver) {
-                        //写数据库
+                        if (isConnectionOver) {
+                            //写数据库
+                            newConnectionService.writeMySQL(tableName, connection);
+                            //在map中移除这个连接
+                            map.remove(connectionId);
+                        }
                     }
                 } catch (EOFException e) {
                     break; // 文件结束
+                } finally {
+                    packetCount++; // 更新计数器
+                    System.out.print("\rNumber of packets read: " + packetCount); // 打印计数器的当前值
+                    if (packetCount % 1000000 == 0) {
+                        log.info("map大小" + map.size() + "\n");
+                    }
                 }
             }
-            // 把所有connection刷数据库，并标记为临时刷入
+            // 刷一次盘
+            insertAllConnection(map);
 
             handle.close();
         } catch (Exception e) {
@@ -98,16 +130,18 @@ public class NewPackerReader {
         }
     }
 
-    //生成数据包的唯一标识符，每个标识符对应的连接同一时间在内存中只会存在一个
+    /**
+     * 生成数据包的唯一标识符，每个标识符对应的连接同一时间在内存中只会存在一个
+     */
     private String generateConnectionId(Packet packet) {
         //获取TCP，IP部分
-        String srcIp = newConnectionService.getSourceIp(packet);
+        String srcIp = packetService.getSourceIp(packet);
 
-        String dstIp = newConnectionService.getDstIp(packet);
+        String dstIp = packetService.getDstIp(packet);
 
-        int srcPort = newConnectionService.getSourcePort(packet);
+        int srcPort = packetService.getSourcePort(packet);
 
-        int dstPort = newConnectionService.getDstPort(packet);
+        int dstPort = packetService.getDstPort(packet);
 
         // 生成并返回连接ID
         // ID一定是小ip在前，大ip在后
@@ -116,6 +150,16 @@ public class NewPackerReader {
                 dstIp + ":" + dstPort + "<->" + srcIp + ":" + srcPort;
 
         return connectionId;
+    }
+
+    /**
+     * 检查内存中的连接是否太多了，如果太多就刷一次盘
+     */
+    private void checkMapSize(HashMap<String, NewConnection> map) {
+        if (map.size() > MAXCONNECTIONNUM) {//如果超过了阈值
+            //把map中所有数据刷进数据库
+            insertAllConnection(map);
+        }
     }
 
 
@@ -130,12 +174,19 @@ public class NewPackerReader {
             //把连接设置为临时
             connection.setIsTemporary(true);
             //将连接写入数据库
-            newConnectionService.writeMySQL(fileName, connection);
+            newConnectionService.writeMySQL(tableName, connection);
             //计数
             count++;
         }
 
-        log.info("一共写入" + count + "个临时数据");
+        log.info("一共写入" + count + "个临时数据,目前Map大小" + map.size() + "\n");
+        //清空map
+        map.clear();
+        map = null;
+
+        //创建一个空的map
+        map = new HashMap<>();
+
     }
 
     /**
@@ -147,25 +198,72 @@ public class NewPackerReader {
         //生成新连接
         NewConnection connection = new NewConnection();
 
-
         //设置必要字段
         //设置唯一标识符
         connection.setConnectionId(generateConnectionId(packet));
 
         //设置ip和端口信息，一次连接的方向在创造连接时确定
-        connection.setSourceIpAddress(newConnectionService.getSourceIp(packet));
-        connection.setDestinationIpAddress(newConnectionService.getDstIp(packet));
-        connection.setSourcePort(newConnectionService.getSourcePort(packet));
-        connection.setDestinationPort(newConnectionService.getDstPort(packet));
+        connection.setSourceIpAddress(packetService.getSourceIp(packet));
+        connection.setDestinationIpAddress(packetService.getDstIp(packet));
+        connection.setSourcePort(packetService.getSourcePort(packet));
+        connection.setDestinationPort(packetService.getDstPort(packet));
 
         //设置连接第一个数据包的时间
         // 获取数据包的时间戳
         connection.setFirstPacketTimestamp(timestamp);
 
-        log.info("连接生成成功");
+        //设置状态
+        connection.setState(NewConnectionState.CLOSED);
+
+        //log.info("连接生成成功");
 
         return connection;
+    }
+
+    /**
+     * 根据数据包更新连接
+     */
+    private void updateNewConnection(NewConnection connection, Packet packet, Instant timestamp) {
+        //更新状态
+        connection.setState(packetService.getState(packet, connection.getState()));
+
+        //确认连接现在是否关闭了
+        if (connection.getState() == NewConnectionState.FINISHED
+                || connection.getState() == NewConnectionState.RST_FINISHED) {
+            connection.setIsOver(true);
+        }
+
+        //更新最后一个数据包时间戳
+        connection.setLastPacketTimestamp(timestamp);
+
+        //更新连接时长
+        connection.updateDuration();
+
+        //更新数据包数量
+        if (checkForward(packet, connection)) {//正向
+            connection.setForwardPacketCount(connection.getForwardPacketCount() + 1);
+        } else {//逆向
+            connection.setBackwardPacketCount(connection.getBackwardPacketCount() + 1);
+        }
+
+        //Http协议pcap4j不支持解析，后续看看要不要手写一下http的协议读取
 
     }
+
+    /**
+     * 判断数据包在该连接中属于正向还是逆向
+     */
+    private boolean checkForward(Packet packet, NewConnection connection) {
+        //获取源ip
+        String sourceIp = packetService.getSourceIp(packet);
+
+        //判断方向
+        if (connection.getSourceIpAddress().equals(sourceIp)) {
+            return true;
+        }
+
+        return false;
+    }
+
 
 }

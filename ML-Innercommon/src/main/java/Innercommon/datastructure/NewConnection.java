@@ -6,10 +6,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.pcap4j.packet.Packet;
 import Innercommon.Enum.ConnectionState;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,18 +29,16 @@ public class NewConnection {
     @Id
     private String id;
 
-
+    @Value("")
     private String connectionId; //连接标识符
 
-
+    @Value("")
     private String sourceIpAddress; // 源IP地址(连接发起者地址)
 
-
+    @Value("")
     private String destinationIpAddress; // 目的IP地址
 
-
     private int sourcePort; // 源端口号
-
 
     private int destinationPort; // 目的端口号
 
@@ -46,7 +46,7 @@ public class NewConnection {
     private NewConnectionState state = NewConnectionState.CLOSED; //连接状态
 
 
-    private Boolean isOver; //连接是否正常关闭
+    private Boolean isOver = false; //连接是否关闭
 
 
     private Instant firstPacketTimestamp; // 第一个数据包的时间戳
@@ -64,16 +64,16 @@ public class NewConnection {
     private int backwardPacketCount = 0; // 反向数据包数量
 
 
-    private Boolean isHTTP;  //是否是HTTP连接
+    private Boolean isHTTP = false;  //是否是HTTP连接
 
 
-    private HTTPMethod httpMethod;  //http请求方法
+    private HTTPMethod httpMethod = HTTPMethod.NOT_HTTP;  //http请求方法
 
 
-    private Boolean httpIsSuccess;  //http有没有成功返回一次200
+    private Boolean httpIsSuccess = false;  //http有没有成功返回一次200
 
 
-    private Boolean isTemporary;  //是否为临时刷入
+    private Boolean isTemporary = false;  //是否为临时刷入
 
     private String ex2;
 
@@ -85,7 +85,7 @@ public class NewConnection {
     public NewConnection() {
     }
 
-    public NewConnection(String connectionId, String sourceIpAddress, String destinationIpAddress, int sourcePort, int destinationPort, NewConnectionState state, Boolean isOver, Instant firstPacketTimestamp, Instant lastPacketTimestamp, int connectionDuration, int forwardPacketCount, int backwardPacketCount, Boolean isHTTP, HTTPMethod httpMethod, Boolean httpIsSuccess,Boolean isTemporary) {
+    public NewConnection(String connectionId, String sourceIpAddress, String destinationIpAddress, int sourcePort, int destinationPort, NewConnectionState state, Boolean isOver, Instant firstPacketTimestamp, Instant lastPacketTimestamp, int connectionDuration, int forwardPacketCount, int backwardPacketCount, Boolean isHTTP, HTTPMethod httpMethod, Boolean httpIsSuccess, Boolean isTemporary) {
         this.connectionId = connectionId;
         this.sourceIpAddress = sourceIpAddress;
         this.destinationIpAddress = destinationIpAddress;
@@ -103,4 +103,21 @@ public class NewConnection {
         this.httpIsSuccess = httpIsSuccess;
         this.isTemporary = isTemporary;
     }
+
+
+    /**
+     * 返回数据包总数
+     */
+    public Integer getPacketSum() {
+        return this.getForwardPacketCount() + this.getBackwardPacketCount();
+    }
+
+    /**
+     * 更新连接时长
+     */
+    public void updateDuration() {
+        this.connectionDuration = Math.toIntExact(
+                ChronoUnit.SECONDS.between(this.firstPacketTimestamp, this.lastPacketTimestamp));
+    }
+
 }
