@@ -48,7 +48,7 @@ public class ElasticUtil {
                     connection.getFirstPacketTimestamp().toString(), // 第一个数据包的时间戳，可能需要格式化
                     connection.getDestinationPort(), // 目的端口
                     connection.getDestinationIpAddress(), // 目的 IP 地址
-                    status); // 连接状态（成功或失败）
+                    1); // 连接状态（成功或失败）
         }).collect(Collectors.toList()); // 收集处理结果为 List
     }
 }

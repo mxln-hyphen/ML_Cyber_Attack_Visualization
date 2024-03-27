@@ -12,10 +12,10 @@ public class ConnectionStatusResponse {
     private String time;
     private int destinationPort;
     private String destinationIp;
-    private String status;
+    private int status;
 
 
-    public ConnectionStatusResponse(String sourceIp, int sourcePort, String time, int destinationPort, String destinationIp, String status) {
+    public ConnectionStatusResponse(String sourceIp, int sourcePort, String time, int destinationPort, String destinationIp, int status) {
         this.sourceIp = sourceIp;
         this.sourcePort = sourcePort;
         this.time = time;

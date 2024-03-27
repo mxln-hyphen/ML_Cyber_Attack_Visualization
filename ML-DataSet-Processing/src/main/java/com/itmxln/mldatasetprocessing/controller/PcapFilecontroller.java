@@ -18,7 +18,9 @@ public class PcapFilecontroller {
 
     @GetMapping("loadfile")
     private String loadfile(){
-        String filename = "D:\\bishe\\pcap\\Monday-WorkingHours.pcap";
+        //String filename = "D:\\bishe\\pcap\\Monday-WorkingHours.pcap";
+        String filename = "D:\\bishe\\pcap\\Tuesday-WorkingHours.pcap";
+
         packerReader.readPcapFile(filename);
         return "OK";
     }

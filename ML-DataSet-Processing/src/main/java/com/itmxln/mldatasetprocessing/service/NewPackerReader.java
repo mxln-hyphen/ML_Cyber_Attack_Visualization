@@ -1,12 +1,9 @@
 package com.itmxln.mldatasetprocessing.service;
 
-import Innercommon.Enum.ConnectionState;
 import Innercommon.Enum.NewConnectionState;
-import Innercommon.datastructure.Connection;
 import Innercommon.datastructure.NewConnection;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.itmxln.mldatasetprocessing.mysql.mapper.DataMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.annotations.Select;
 import org.pcap4j.core.PcapHandle;
 import org.pcap4j.core.Pcaps;
 import org.pcap4j.packet.*;
@@ -27,7 +24,6 @@ public class NewPackerReader {
     //最大储存连接数
     private int MAXCONNECTIONNUM = 3000;
 
-
     //表名
     private String tableName;
 
@@ -38,13 +34,17 @@ public class NewPackerReader {
     @Autowired
     private PacketService packetService;
 
+    @Autowired
+    private DataMapper dataMapper;
+
     /**
      * 从pcap文件中读取所有数据包，并根据它们属于哪个连接进行分类。
      *
      * @param filePath pcap文件的路径
      */
     public void readPcapFile(String filePath) {
-        tableName = "data_1";
+        //获取表名并生成表
+        tableName = createTable(filePath);
         int packetCount = 0;
         try {
             PcapHandle handle = Pcaps.openOffline(filePath);
@@ -263,6 +263,23 @@ public class NewPackerReader {
         }
 
         return false;
+    }
+
+    /**
+     * 根据文件名创建对应的表
+     */
+    private String createTable(String fileName){
+        //生成表名
+        String substring = fileName.substring(fileName.lastIndexOf("\\") + 1, fileName.lastIndexOf("."));
+        String[] split = substring.split("-");
+        String tableName = split[0] + "_" + split[1];
+
+        //如果已经存在，删除表
+        dataMapper.dropExistTable(tableName);
+
+        //创建表
+        dataMapper.createTable(tableName);
+        return tableName;
     }
 
 

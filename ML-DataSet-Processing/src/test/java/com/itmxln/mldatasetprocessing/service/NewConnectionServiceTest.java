@@ -18,7 +18,11 @@ class NewConnectionServiceTest {
     @Test
     void generateMySQLConnection() {
 
-        newConnectionService.selectTemporaryConnectionByConnectionId("data_1","192.168.0.1:80:100.100.100.100:443");
+        //newConnectionService.selectTemporaryConnectionByConnectionId("data_1","192.168.0.1:80:100.100.100.100:443");
+        String filename = "D:\\bishe\\pcap\\Monday-WorkingHours.pcap";
+        String rex = "\\";
+        String substring = filename.substring(filename.lastIndexOf("\\")+1, filename.lastIndexOf("."));
+        System.out.println(substring);
 
     }
 }
