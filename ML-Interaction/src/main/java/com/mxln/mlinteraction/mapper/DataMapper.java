@@ -15,8 +15,8 @@ public interface DataMapper extends BaseMapper<NewConnection> {
     /**
      * 根据时间查询数据
      */
-    @Select("SELECT * FROM ${tableName} " +
-            "where firstPacketTimestamp <= '${endTime}' and lastPacketTimestamp>='${startTime}';")
+    @Select("SELECT * FROM ${tableName} where " +
+            "(not lastPacketTimestamp <= '${startTime}') and (not firstPacketTimestamp>='${endTime}');")
     List<MySQLConnection> selectByTimeRange(@Param("tableName") String tableName,
                                           @Param("startTime") String startTime,
                                           @Param("endTime") String endTime);
